@@ -1,0 +1,56 @@
+# Demo stack proving the Cerbos engine end-to-end with a custom
+# Pomerium binary. The binary itself is bind-mounted in from the host
+# so this file works without a Dockerfile — build it with:
+#
+#   CGO_ENABLED=0 go build -o ./pomerium-cerbos ./cmd/pomerium-cerbos
+#
+# from the repository root, then `docker compose up` here.
+
+name: pomerium-cerbos-demo
+
+services:
+  cerbos:
+    image: ghcr.io/cerbos/cerbos:dev
+    command:
+      - server
+      - --set=storage.driver=disk
+      - --set=storage.disk.directory=/policies
+      - --set=storage.disk.watchForChanges=false
+    volumes:
+      - ./cerbos-policies:/policies:ro
+    environment:
+      - CERBOS_LOG_LEVEL=warn
+    ports:
+      - "3593:3593"
+      - "3592:3592"
+    healthcheck:
+      test: ["CMD", "/cerbos", "healthcheck"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  upstream:
+    image: hashicorp/http-echo
+    command: ["-text=hello-from-upstream", "-listen=:8080"]
+    expose:
+      - "8080"
+
+  pomerium:
+    # Pomerium embeds envoy built against glibc, so a glibc-based
+    # runtime image is required (alpine/musl will fail with ENOENT on
+    # exec of the unpacked envoy binary).
+    image: debian:bookworm-slim
+    command:
+      - /usr/local/bin/pomerium-cerbos
+      - -config
+      - /etc/pomerium/config.yaml
+    volumes:
+      - ${POMERIUM_CERBOS_BINARY:-../pomerium-cerbos}:/usr/local/bin/pomerium-cerbos:ro
+      - ./pomerium-config.yaml:/etc/pomerium/config.yaml:ro
+    ports:
+      - "9080:9080"
+    depends_on:
+      cerbos:
+        condition: service_healthy
+      upstream:
+        condition: service_started

@@ -1,0 +1,22 @@
+---
+apiVersion: api.cerbos.dev/v1
+resourcePolicy:
+  version: default
+  resource: pomerium_route
+  rules:
+    # Deny on the /forbidden path or the deny host, no matter the role.
+    - actions: ["*"]
+      effect: EFFECT_DENY
+      roles: ["pomerium_user"]
+      condition:
+        match:
+          any:
+            of:
+              - expr: R.attr.path == "/forbidden"
+              - expr: R.attr.host == "deny.localhost"
+
+    # Allow read on any other request when the principal carries the
+    # default Pomerium role.
+    - actions: ["read"]
+      effect: EFFECT_ALLOW
+      roles: ["pomerium_user"]
