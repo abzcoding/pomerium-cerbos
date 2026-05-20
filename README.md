@@ -6,7 +6,7 @@ An out-of-tree [Pomerium](https://github.com/pomerium/pomerium)
 Cerbos gRPC API.
 
 It plugs into Pomerium's [external policy engine
-SPI](https://github.com/pomerium/pomerium/blob/main/docs/external-policy-engine.md)
+SPI](https://github.com/pomerium/pomerium/pull/6361)
 via init-time registration. Pomerium's built-in AuthZEN engine can already
 talk to Cerbos's AuthZEN endpoint, but the native API gives access to
 Cerbos's richer attribute model and policy-version semantics, so this
