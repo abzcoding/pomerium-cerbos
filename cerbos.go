@@ -134,10 +134,12 @@ func (e *Engine) callPDP(ctx context.Context, req *evaluator.Request) (*engine.D
 // which the engine cannot delegate away.
 func preCheck(req *evaluator.Request) (*engine.Decision, bool) {
 	switch {
-	case req == nil, req.Policy == nil:
+	case req == nil:
 		return deny(criteria.ReasonRouteNotFound), true
 	case req.IsInternal:
 		return allow(criteria.ReasonPomeriumRoute), true
+	case req.Policy == nil:
+		return deny(criteria.ReasonRouteNotFound), true
 	case req.Session.ID == "" && !req.Policy.AllowPublicUnauthenticatedAccess:
 		return deny(criteria.ReasonUserUnauthenticated), true
 	}
